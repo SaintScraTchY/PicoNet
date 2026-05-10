@@ -1,0 +1,7 @@
+﻿services:
+  piconet.api:
+    image: piconet.api
+    build:
+      context: .
+      dockerfile: PicoNet.Api/Dockerfile
+

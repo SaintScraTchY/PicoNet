@@ -7,7 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Folder Include="Commands\" />
     <Folder Include="DTOs\" />
+    <Folder Include="Handlers\" />
+    <Folder Include="Queries\" />
   </ItemGroup>
 
   <ItemGroup>

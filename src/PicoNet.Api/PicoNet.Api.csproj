@@ -28,7 +28,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\PicoNet.Application\PicoNet.Application.csproj" />
     <ProjectReference Include="..\PicoNet.Contracts\PicoNet.Contracts.csproj" />
+    <ProjectReference Include="..\PicoNet.Infrastructure\PicoNet.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,13 +1,16 @@
 ﻿using PicoNet.Domain.Entities.Common.Concrete;
 using PicoNet.Domain.Enums;
 using PicoNet.Domain.Events;
+using PicoNet.Domain.IServices;
+using PicoNet.Domain.ValueObjects;
 
 namespace PicoNet.Domain.Entities;
 
 public class ShortenedUrl : SoftDeletableAggregateRoot<Guid>
 {
     // Core identifiers
-    public string NanoId { get; private set; } = string.Empty;
+    // For full-text search (EF Core will manage this)
+    public ShortCode NanoId { get; private set; }
     public string OriginalUrl { get; private set; } = string.Empty;
     public string? CustomAlias { get; private set; } // User-defined custom short codes
     
@@ -40,7 +43,7 @@ public class ShortenedUrl : SoftDeletableAggregateRoot<Guid>
     // Factory method
     public static ShortenedUrl Create(
         string originalUrl,
-        string nanoId,
+        IShortCodeGenerator codeGenerator,
         Guid? userId = null,
         string? customAlias = null,
         bool isPermanent = false,
@@ -52,7 +55,9 @@ public class ShortenedUrl : SoftDeletableAggregateRoot<Guid>
         var url = new ShortenedUrl
         {
             Id = Guid.NewGuid(),
-            NanoId = nanoId,
+            NanoId = customAlias is not null 
+                ? new ShortCode(customAlias) 
+                : codeGenerator.Generate(),
             OriginalUrl = originalUrl,
             CustomAlias = customAlias,
             UserId = userId,
@@ -65,8 +70,7 @@ public class ShortenedUrl : SoftDeletableAggregateRoot<Guid>
             Status = UrlStatus.Active,
             CreatedBy = userId ?? Guid.Empty
         };
-        
-        url.AddDomainEvent(new UrlCreatedDomainEvent(url.Id, nanoId, originalUrl, userId));
+        url.AddDomainEvent(new UrlCreatedDomainEvent(url.Id, url.NanoId, originalUrl, userId));
         
         return url;
     }
@@ -135,11 +139,11 @@ public class ShortenedUrl : SoftDeletableAggregateRoot<Guid>
         UpdatedAt = DateTime.UtcNow;
     }
     
-    public void RenewalUrl(string nanoId)
+    public void RenewalUrl(IShortCodeGenerator codeGenerator)
     {
         if (!IsPermanent)
         {
-            NanoId =  nanoId;
+            NanoId = codeGenerator.Generate();
             ExpiryTime = DateTime.UtcNow.AddDays(31);
         }
         UpdatedAt = DateTime.UtcNow;

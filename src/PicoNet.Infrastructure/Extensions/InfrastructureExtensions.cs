@@ -1,0 +1,49 @@
+﻿// PicoNet.Infrastructure/Extensions/InfrastructureExtensions.cs
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using PicoNet.Domain.IServices;
+using PicoNet.Domain.Service;
+using PicoNet.Infrastructure.Data;
+
+namespace PicoNet.Infrastructure.Extensions;
+
+public static class InfrastructureExtensions
+{
+    public static IServiceCollection AddInfrastructure(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        // Database
+        services.AddDbContext<PicoNetDbContext>(options =>
+        {
+            options.UseNpgsql(
+                configuration.GetConnectionString("DefaultConnection"),
+                npgsqlOptions =>
+                {
+                    npgsqlOptions.EnableRetryOnFailure(3);
+                    npgsqlOptions.CommandTimeout(30);
+                    npgsqlOptions.MigrationsHistoryTable("__ef_migrations_history", "public");
+                });
+            
+            // Enable sensitive data logging only in development
+            if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
+            {
+                options.EnableSensitiveDataLogging();
+            }
+        });
+        
+        // Services
+        services.AddSingleton<IShortCodeGenerator>(sp =>
+        {
+            var salt = configuration["ShortCode:Salt"] ?? "PicoNet-Default-Salt";
+            return new ShortCodeGenerator(salt);
+        });
+        
+        // Health checks
+        services.AddHealthChecks()
+            .AddCheck<DatabaseHealthCheck>("database");
+        
+        return services;
+    }
+}
